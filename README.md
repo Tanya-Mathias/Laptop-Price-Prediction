@@ -1,6 +1,7 @@
 # Laptop-Price-Prediction
 A simple laptop price prediction project using R programming
 
+
 Linear Regresssion, Support Vector Machines and Random Forest models are built.
 
 The RMSE scores are the following:
