@@ -1,0 +1,190 @@
+---
+title: "Laptop Price Preediction"
+output: html_document
+date: "2023-04-21"
+---
+## Step 1: Importing libraries
+Importing the necessary libraries for carrying out analysis and prediction.
+```{r}
+library(ggplot2)
+library(BSDA)
+library("readxl")
+library("ggpubr")
+library(BSDA)
+library(magrittr)
+library(tidyverse)
+library(Metrics)
+library(caret)
+library(e1071)
+library(randomForest)
+library(stringr)
+```
+
+## Step 2: Read dataset
+
+```{r}
+data <- read_excel("C:/Users/Tanya/Desktop/laptop_data.xlsx")
+print(data)
+data = data.frame(data)
+mdata <- data[,-1]
+View(mdata)
+summary(mdata)
+dim(mdata)
+```
+
+## Step 3: Data Visualisation
+```{r}
+mdata$Ram <- gsub("GB","",mdata$Ram)
+mdata$Ram <- as.numeric(as.character(mdata$Ram))
+mdata$Weight <- gsub("kg","",mdata$Weight)
+mdata$Weight <- as.numeric(as.character(mdata$Weight))
+den <- density(mdata$Price)
+plot(den, frame = FALSE, col ="blue",main = "price density plot")
+```
+```{r}
+ggplot(mdata , aes(x=Price))+ geom_density() + scale_x_log10(breaks = c(10000,40000,80000,120000))
+```
+```{r}
+hist(mdata$Price,x_val="price",col="green",prob='TRUE',xlab='price')
+lines(density(mdata$Price),lwd=2,col='black')
+```
+```{r}
+d <- tapply(mdata$Price, mdata$Company ,mean)
+barplot(d)
+```
+```{r}
+d <- tapply(mdata$Price, mdata$TypeName, mean)
+barplot(d)
+```
+```{r}
+plot(mdata$Inches,mdata$Price,col='green')
+```
+```{r}
+d <- tapply(mdata$Price,mdata$V1.y, mean)
+barplot(d)
+```
+```{r}
+table(mdata$V1.x)
+d <- tapply(mdata$Price,mdata$V1.x, mean)
+barplot(d)
+```
+```{r}
+d <- tapply(mdata$Price, mdata$Ram,mean)
+barplot(d)
+```
+
+## Step 4:Converting the values from character into suitable format
+```{r}
+mdata$mem_HDD <- as.numeric(as.character(mdata$mem_HDD))
+mdata$mem_SSD <- as.numeric(as.character(mdata$mem_SSD))
+mdata$mem_flash <- as.numeric(as.character(mdata$mem_flash))
+mdata$Ram <- as.numeric(as.character(mdata$Ram))
+mdata$x_res <- as.numeric(as.character(mdata$x_res))
+mdata$y_res <- as.numeric(as.character(mdata$y_res))
+mdata$Inches <- as.numeric(as.character(mdata$Inches))
+mdata$Weight <- as.numeric(as.character(mdata$Weight))
+mdata$Ram <- gsub("GB","",mdata$Ram)
+mdata$Ram <- as.numeric(as.character(mdata$Ram))
+mdata$Weight <- gsub("kg","",mdata$Weight)
+mdata$Weight <- as.numeric(as.character(mdata$Weight))
+mdata$V2.x <- as.numeric(str_remove(mdata$V2.x,'GHz'))
+```
+
+## Step 5: Testing 
+Conducting various normality and hypothesis tests to find whether each variables supports the hypothesis
+
+*Shapiro Test*
+shapiro test for normality, if p>0.05 accept H0 else reject
+```{r}
+shapiro.test(mdata$Ram)
+```
+
+*Chi Square Test*
+Chi square test - test for independence between categorical variables
+null hypothesis-variables do not have significant relation
+If p>0.05 accept H0 else reject
+```{r}
+chisq.test(mdata$Company,mdata$Price, correct = FALSE,simulate.p.value = TRUE)
+chisq.test(mdata$OpSys,mdata$Price, correct = FALSE,simulate.p.value = TRUE)
+chisq.test(mdata$TypeName,mdata$Price, correct = FALSE,simulate.p.value = TRUE)
+chisq.test(mdata$V1.x,mdata$Price, correct = FALSE,simulate.p.value = TRUE)
+chisq.test(x = mdata$Touch,y = mdata$Price, simulate.p.value = TRUE)
+```
+
+*Correlation*
+Finding whether two variables have a positive correlation
+```{r}
+cor(mdata$Inches,mdata$Price)
+cor(mdata$Ram,mdata$Price)
+cor(mdata$mem_SSD,mdata$Price)
+cor(mdata$mem_flash,mdata$Price)
+```
+
+*Pearson*
+Linear correlation between two variables X and Y
+```{r}
+cor.test(df$Price, df$Ram, method=c("pearson"))
+```
+
+*T-test*
+It is used to determine whether the mean of the two groups sampled from normal distribution is equal to each other. 
+Null hypothesis is that the two means are the same, if p>0.05 accept H0 else reject
+```{r}
+t.test(x=df$Ram,conf.level=0.05)
+```
+
+## Step 6: Splitting the dataset
+Split datset into test and train using 70% of dataset as training set and 30% as test set
+```{r}
+set.seed(120)
+sample <- sample(c(TRUE, FALSE), nrow(mdata), replace=TRUE, prob=c(0.7,0.3))
+train  <- mdata[sample, ]
+test   <- mdata[!sample, ]
+View(train)
+View(test)
+```
+
+## Step 7: Model Building and Evaluation
+
+*Linear Regression Model**
+```{r}
+model <- lm(unlist(Price) ~ unlist(Company)+unlist(TypeName)+unlist(Inches)+unlist(Ram)+unlist(OpSys)+unlist(Weight)+unlist(V1.x)+unlist(V2.x)+unlist(V1.y)+unlist(mem_HDD)+unlist(mem_SSD)+unlist(mem_flash)+unlist(Touch)+unlist(x_res)+unlist(y_res), data = train )
+summary(model)
+```
+
+Re-building the model using the coefficients that contribute well
+```{r}
+model2<- lm(unlist(Price) ~ unlist(Inches)+unlist(Ram)+unlist(Weight)+unlist(V1.x)+unlist(mem_SSD)+unlist(Touch), data = train)
+test1 <- select(test,Inches,Ram, Weight,V1.x,mem_SSD,Touch )
+pred = predict(model2, test1)
+mn = mean(df$Price,na.rm = TRUE)
+rm = rmse(test$Price,pred)
+print(rm/mn)
+```
+
+*Support Vector Machines*
+```{r}
+model3<-svm(unlist(log(Price)) ~ unlist(Inches)+unlist(Ram)+unlist(Weight)+unlist(V1.x)+unlist(mem_SSD)+unlist(Touch), data = train)
+predsvm=predict(model3,test1)
+mn = mean(df$Price,na.rm = TRUE)
+rm = rmse(test$Price,predsvm)
+print(rm/mn)
+```
+
+*Random Forest*
+```{r}
+model4<-randomForest(Price~.,data=train,ntree=100)
+predrf=predict(model4,test)
+mn = mean(df$Price,na.rm = TRUE)
+rm = rmse(test$Price,predrf)
+print(rm/mn)
+```
+Visualising random forest
+```{r}
+plot(model4)
+importance(model4)
+varImpPlot(model4)
+```
+
+## Results
+Random Forest model predicted the values best and has the lowest RMSE score when compared with the other models
