@@ -1,5 +1,4 @@
-pwd()
-install.packages(bsda)
+#Importing libraries
 library(ggplot2)
 library(BSDA)
 library("readxl")
@@ -12,7 +11,7 @@ library(caret)
 library(e1071)
 library(randomForest)
 
-data <- read.csv("C:/Users/Desktop/laptop_data.csv")
+data <- read_excel("C:/Users/Desktop/laptop_data.xlsx")
 
 print(data)
 data = data.frame(data)
