@@ -192,4 +192,4 @@ fun_123456 <- function(x)
 df_with_os1$y_res <- mapply(fun_123456, df_with_os1$ScreenResolution)
 
 #to copy df
-#write_xlsx(df_with_os1,"C:\\Users\\Tanya\\Desktop\\laptopdata.xlsx")
+#write_xlsx(df_with_os1,"C:\\Users\\Tanya\\Desktop\\laptop_data.xlsx")
